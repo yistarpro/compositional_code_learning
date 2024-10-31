@@ -5,6 +5,17 @@ import argparse
 from torchtext.legacy import data
 from torchtext.legacy import datasets
 import utils
+from itertools import product
+
+from transformers import BertTokenizer, BertModel
+
+model = BertModel.from_pretrained("bert-base-uncased", add_pooling_layer=False, output_hidden_states=True, output_attentions=True)
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+embedding_layer = model.embeddings.word_embeddings
+embedding_matrix = embedding_layer.weight.data
+
+tokens = list(tokenizer.get_vocab().keys())
 
 #1. Construct Original Embedding.
 #This file is not modified much, just changed some variable names.
@@ -46,24 +57,12 @@ def main():
     # We also want a list of all glove_words, because it is handy
     glove_words = []
     # Reading previously specified file
-    with open(utils.datapath(modelname) + modelname) as file:
-        # For every line, the first part is the word, and the rest is the vector.
-        for i, line in enumerate(file):
-            entry = line.split()
-            word = entry[0]
-            embedding = np.array(entry[1:], dtype='float32')
-            # Add word to our running list
-            glove_words.append(word)
-            # Add word -> embedding pair to dict
-            glove_dict[word] = embedding
-            # Also to our FloatTensor for all GloVe embeddings
  
     # There are this many words included in the file
-    total_glove_num = len(glove_words)
+    total_glove_num = len(tokens)
     # We also want to store all the embeddings to a file, which we can't do from a dict
     all_orig_embeddings = torch.zeros(total_glove_num, utils.numfeature(modelname), dtype=torch.float)
-    for i, word in enumerate(glove_words):
-        embedding=glove_dict[word] 
+    for i, embedding in enumerate(embedding_matrix):
         # Also to our FloatTensor for all GloVe embeddings
         all_orig_embeddings[i] = torch.FloatTensor(embedding)
     print('GloVe dict constructed')
@@ -71,7 +70,7 @@ def main():
     # Now we make a list of words that appear in both the IMDB dataset and the GloVE file
     shared_words = []
     for word in imdb_words:
-        if word in glove_dict:
+        if word in tokens:
             shared_words.append(word)
     print('Shared words list constructed.')
     # We write our shared_word list to a text file for easy reference
@@ -80,7 +79,7 @@ def main():
 
     # We write our glove_word list to a text file for easy reference
     with open(utils.datapath(modelname) + 'glove_words.txt', 'w') as out_file:
-        out_file.write('\n'.join(glove_words))
+        out_file.write('\n'.join(tokens))
 
     # We save our glove_embedding for later use
     torch.save(all_orig_embeddings, utils.datapath(modelname) + 'all_orig_emb.pt')

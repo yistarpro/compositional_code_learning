@@ -1,11 +1,30 @@
 ## Compressing Word Embeddings Via Deep Compositional Code Learning (Pytorch Implementation)
 
-This repository contains my personal implementation of the following work:
+This repository is modification of implementation of following: 
+- https://github.com/mingu600/compositional_code_learning
 
-Shu, R., Nakayama, H. (2018). [Compressing Word Embeddings Via Deep Compositional Code Learning](https://arxiv.org/pdf/1711.01068.pdf).
+It contains an implementation of the following work:
 
-I was able to implement their compositional code learning method, evaluate on sentiment classification tasks, and compare word similarity between codes.
-Evaluation on machine translation tasks has not been implemented yet.
+[SN18] Shu, R., Nakayama, H. (2018). [Compressing Word Embeddings Via Deep Compositional Code Learning](https://arxiv.org/pdf/1711.01068.pdf).
+
+The purpose of this repository is to implement results from following works:
+
+[KPLC24] Jae-yun Kim, Saerom Park, Joohee Lee, Jung Hee Cheon: Privacy-preserving embedding via look-up table evaluation with fully homomorphic encryption. Forty-first International Conference on Machine Learning, 2024.
+
+Former implementations contains:
+
+- compression of embedding layer via deep learning : on GloVe42B300d.
+- sentimental analysis from [SN18].
+
+Our modification added followings:
+
+- compression of embedding layer via deep learning : on  GloVe6B50d, GloVe42B300d, GPT-2, BERT.
+- simplified sentimental analysis with logistic regression for encrypted status.
+- exporting learned parameters of the embeddings and the logistic regression model.
+
+After construction of model, model is exported and the rest of the experiment continue in following CKKSEIF library, based on OpenFHE:
+- https://github.com/yistarpro/CKKSEIF
+
 
 ## Dependencies
 * Python 3
@@ -15,43 +34,40 @@ Evaluation on machine translation tasks has not been implemented yet.
 * GloVe vectors (Download glove.42B.300d.zip from https://nlp.stanford.edu/projects/glove/)
 
 ## How to use
-To construct embeddings and other text files necessary for learning codes (only needs to be run once):
-```
-python3 construct_embeddings.py
-```
-To train the model to generate codes and embeddings (look inside train_code_learner.py for full list of commands):
-```
-python3 train_code_learner.py
-```
-To train a classifier on GloVe embeddings or compositional coded embeddings (check file for commands):
-```
-python3 train_classifier.py
-```
-To generate codes for words:
-```
-python3 code_analysis.py
-```
 
-## Brief Results
-Using a 8x8 coding model, I got the following encodings:
+1. The first step is construction of the embedding for learning codes, with various embedding models.
 
-|             |                 |
-| ------------- | ------------- |
-| cat       	|  5,6,4,7,5,5,3,6 	|
-| dog       	|  0,6,4,7,4,0,3,6 	|
-| cow       	|  0,5,4,7,4,5,3,6 	|
-|           	|                   |
-| blue      	|  5,6,4,7,5,5,3,6 	|
-| purple    	|  5,6,4,7,4,5,3,2 	|
-|           	|                   |
-| president 	|  4,6,4,7,5,1,4,6  |
-| governor  	|  0,6,4,7,5,1,4,6  |
+- construct_embeedings.py
+- construct_embeedings_bert.py
+- construct_embeedings_gpt.py
 
-Words that are similar have very similar encodings. Also, for sentiment classification:
+2. The seconds step is training compressed embeddings.
 
-|      Model       |          Accuracy     |
-| ------------- | ------------- |
-| Classifier with baseline GloVe embedding | 0.853|
-| Classifier with 64x8 encoding | 0.841|
+- train_code_learner.py
 
-Therefore, I was able to replicate the results of the paper fairly well, and I also received very similar accuracy scores for the two classifiers, even though the the 64x8 encoding classifier is 3% the size of the baseline classifier.
+This automatically compress all four models with various parameters, but users can specify the setting with options.
+
+3. Using compressed embeddings, following code performs downstream task specified in [SN18]
+
+- train_classifier.py
+
+We also provide following experiment with HE friendly sentimental analysis.
+
+- train_classifier_logreg.py
+
+These codes automatically performs test on two GloVe models with various parameters, but users can specify the setting with options.
+
+4. Save learned parameters to txt form, to use in CKKSEIF library.
+
+- code_to_txt.py
+
+This automatically saves all learned parameters, but users can specify the setting with options.
+
+The result shold be moved to CKKSEIF/data, but we provide the result in following link:
+- https://drive.google.com/file/d/17YVk3uR_Q25j0ebJzyrblDupi1aMtwhz/view?usp=sharing
+
+5. misc.
+
+- utils.py contains various utility functions.
+- models.py contains the code for model.
+- code_analysis.py contains various evaluation functions for checking the performance. Users can specify the setting with options. "ClassifierEvaluator" evaluates the classifier model, and "CompressionEvaluator" evaluates the compression model. 
