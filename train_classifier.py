@@ -237,7 +237,7 @@ def main(modelname = utils.modelname, sizeofM=utils.defaultM, sizeofK=utils.defa
 def iterative():
     KandM=utils.KandM
     
-    for modelname in utils.models:
+    for modelname in utils.models_glove:
         for key, value in KandM.items():
             for m in value:
                 print('''M and K: {name}'''.format(name = utils.dataname(modelname, m, key)))
